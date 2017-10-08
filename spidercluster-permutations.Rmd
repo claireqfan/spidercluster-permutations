@@ -14,9 +14,9 @@ require(dplyr)
 require(ggplot2)
 ```
 
-Create null distribution of clusters of (1) all spiders and (2) spiders who clustered
-```{r}
 
+```{r}
+# CREATE NULL DISTRIBUTIONS of clusters of (1) all spiders and (2) spiders who clustered. Uses 2014 data.
 # (1) all spiders can cluster
 nullDist <- c()
 
@@ -45,20 +45,24 @@ for(i in 1:1000){
   nullDist2 <- rbind(nullDist2, cbind(t(randCluster$SpiderSizemm), clusterStats))
 }
 
+#ANALYSIS
+# the actual clusters
 clusters14 <- spiders %>%
   filter(Year == 2014, startsWith(WebID, 'C')) %>%
   group_by(WebID) %>%
   summarise(meanSize = mean(SpiderSizemm), sdSize = sd(SpiderSizemm), maxSize = max(SpiderSizemm), minSize = min(SpiderSizemm)) %>%
   filter(!is.na(sdSize))
 
-sdSignificant = 0
-meanNull1SD = mean(nullDist$sdSize)     # 1.24
-meanNull2SD = mean(nullDist2$sdSize)    # 1.27
-meanActualSD = mean(clusters14$sdSize)  # 0.92
+# analysis by aggregating the actual clusters
+meanNull1SD = mean(nullDist$sdSize)     # 1.24 average SD for random clusters of all spiders
+meanNull2SD = mean(nullDist2$sdSize)    # 1.27 average SD for random clusters of spiders who clustered
+meanActualSD = mean(clusters14$sdSize)  # 0.92 average SD of actual clusters
 
-pSD = 2*sum(nullDist$sdSize<meanActualSD)/1000   # 0.66
-pSD2 = 2*sum(nullDist2$sdSize<meanActualSD)/1000 # 0.78
+pSD = 2*sum(nullDist$sdSize<meanActualSD)/1000   # 0.66 proportion of random clusters of all spiders whose SDs were more extreme
+pSD2 = 2*sum(nullDist2$sdSize<meanActualSD)/1000 # 0.78 proportion of random clusters of clustered spiders whose SDs were more extreme
 
+
+# analysis on each actual cluster
 pSDnull1 <- c()
 pSDnull2 <- c()
 
@@ -67,7 +71,7 @@ for(cluster in 1:61){
   pSDnull2 <- c(pSDnull2, 2*sum(nullDist2$sdSize<clusters14$sdSize[cluster])/1000)
 }
 
-mean(pSDnull1) # 0.63
-mean(pSDnull2) # 0.67
+mean(pSDnull1) # 0.63 average p-value from the actual clusters based on null1
+mean(pSDnull2) # 0.67 average p-value from the actual clusters based on null2
 
 ```
