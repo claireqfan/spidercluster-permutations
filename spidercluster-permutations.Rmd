@@ -18,6 +18,12 @@ require(ggplot2)
 ```{r}
 # CREATE NULL DISTRIBUTIONS of clusters of (1) all spiders and (2) spiders who clustered. Uses 2014 data.
 # (1) all spiders can cluster
+library(readxl)
+library(backports)
+library(dplyr)
+library(ggplot2)
+spiders <- read_excel("spiders.xlsx")
+
 nullDist <- c()
 
 for(i in 1:1000){
@@ -36,7 +42,8 @@ nullDist2 <- c()
 
 for(i in 1:1000){
   randCluster <- spiders %>%
-    filter(Year == 2014, startsWith(WebID, 'C')) %>%
+    filter(Year == 2014) %>%  
+    filter(grepl('C', WebID)) %>%
     sample_n(7, replace = FALSE)
   
   clusterStats <- randCluster %>%
@@ -48,7 +55,8 @@ for(i in 1:1000){
 #ANALYSIS
 # the actual clusters
 clusters14 <- spiders %>%
-  filter(Year == 2014, startsWith(WebID, 'C')) %>%
+  filter(Year == 2014)%>%  
+  filter(grepl('C', WebID)) %>%
   group_by(WebID) %>%
   summarise(meanSize = mean(SpiderSizemm), sdSize = sd(SpiderSizemm), maxSize = max(SpiderSizemm), minSize = min(SpiderSizemm)) %>%
   filter(!is.na(sdSize))
