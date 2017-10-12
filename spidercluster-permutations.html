@@ -9,8 +9,9 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="Claire" />
+<meta name="author" content="Claire and Ethan" />
 
+<meta name="date" content="2017-10-12" />
 
 <title>spidercluster-permutations</title>
 
@@ -117,8 +118,8 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">spidercluster-permutations</h1>
-<h4 class="author"><em>Claire</em></h4>
-<h4 class="date"><em>October 7, 2017</em></h4>
+<h4 class="author"><em>Claire and Ethan</em></h4>
+<h4 class="date"><em>October 12, 2017</em></h4>
 
 </div>
 
@@ -198,65 +199,72 @@ spiders &lt;- read_excel(&quot;spiders.xlsx&quot;)</code></pre>
 ## col_types, : [1540, 10]: expecting numeric: got 'NA'</code></pre>
 <pre><code>## Warning in read_xlsx_(path, sheet, col_names = col_names, col_types =
 ## col_types, : [1541, 10]: expecting numeric: got 'NA'</code></pre>
-<pre class="r"><code>nullDist &lt;- c()
-
-for(i in 1:1000){
-  randCluster &lt;- spiders %&gt;%
-    filter(Year == 2014) %&gt;%
-    sample_n(7, replace = FALSE)
-  
-  clusterStats &lt;- randCluster %&gt;%
-    summarise(meanSize = mean(SpiderSizemm), sdSize = sd(SpiderSizemm), maxSize = max(SpiderSizemm), minSize = min(SpiderSizemm))
-  
-  nullDist &lt;- rbind(nullDist, cbind(t(randCluster$SpiderSizemm), clusterStats))
-}</code></pre>
-<pre><code>## Warning: package 'bindrcpp' was built under R version 3.2.5</code></pre>
-<pre class="r"><code># (2) only use spiders that originally clustered
-nullDist2 &lt;- c()
-
-for(i in 1:1000){
-  randCluster &lt;- spiders %&gt;%
-    filter(Year == 2014) %&gt;%  
-    filter(grepl('C', WebID)) %&gt;%
-    sample_n(7, replace = FALSE)
-  
-  clusterStats &lt;- randCluster %&gt;%
-    summarise(meanSize = mean(SpiderSizemm), sdSize = sd(SpiderSizemm), maxSize = max(SpiderSizemm), minSize = min(SpiderSizemm))
-  
-  nullDist2 &lt;- rbind(nullDist2, cbind(t(randCluster$SpiderSizemm), clusterStats))
-}
-
-#ANALYSIS
+<pre class="r"><code>#ANALYSIS
 # the actual clusters
 clusters14 &lt;- spiders %&gt;%
   filter(Year == 2014)%&gt;%  
   filter(grepl('C', WebID)) %&gt;%
   group_by(WebID) %&gt;%
-  summarise(meanSize = mean(SpiderSizemm), sdSize = sd(SpiderSizemm), maxSize = max(SpiderSizemm), minSize = min(SpiderSizemm)) %&gt;%
-  filter(!is.na(sdSize))
+  filter(!is.na(SpiderSizemm)) %&gt;%
+  summarise(meanSize = mean(SpiderSizemm), sdSize = sd(SpiderSizemm), maxSize = max(SpiderSizemm), minSize = min(SpiderSizemm))</code></pre>
+<pre><code>## Warning: package 'bindrcpp' was built under R version 3.2.5</code></pre>
+<pre class="r"><code>meanActualsdSize = mean(clusters14$sdSize, na.rm=TRUE)  # 0.92 average SD of actual clusters
+
+
+nullDist &lt;- c()
+
+for(i in 1:100){
+  clusterStats &lt;- spiders %&gt;%
+    filter(Year == 2014) %&gt;%
+    mutate(sizePerm = sample(SpiderSizemm, replace=FALSE)) %&gt;%
+    group_by(WebID) %&gt;%
+    filter(!is.na(SpiderSizemm)) %&gt;%
+    summarise(meanSize = mean(sizePerm), sdSize = sd(sizePerm), maxSize =
+                max(sizePerm), minSize = min(sizePerm), sumSq = sum(sizePerm^2))
+  meanNullsdSize = mean(clusterStats$sdSize, na.rm=TRUE)     
+  if (meanNullsdSize&gt;meanActualsdSize) {
+    nullDist = c(nullDist, 1)
+  }
+}
+
+# (2) only use spiders that originally clustered
+nullDist2 &lt;- c()
+
+for(i in 1:100){
+  clusterStats &lt;- spiders %&gt;%
+    filter(Year == 2014) %&gt;%  
+    filter(grepl('C', WebID)) %&gt;%
+    mutate(sizePerm = sample(SpiderSizemm, replace=FALSE)) %&gt;%
+    group_by(WebID) %&gt;%
+    filter(!is.na(SpiderSizemm)) %&gt;%
+    summarise(meanSize = mean(sizePerm), sdSize = sd(sizePerm), maxSize =
+                max(sizePerm), minSize = min(sizePerm))
+  meanNull1sdSize = mean(clusterStats$sdSize, na.rm=TRUE)     
+  if (meanNullsdSize&gt;meanActualsdSize) {
+    nullDist2 = c(nullDist2, 1)
+  }
+}
 
 # analysis by aggregating the actual clusters
-meanNull1SD = mean(nullDist$sdSize)     # 1.24 average SD for random clusters of all spiders
-meanNull2SD = mean(nullDist2$sdSize)    # 1.27 average SD for random clusters of spiders who clustered
-meanActualSD = mean(clusters14$sdSize)  # 0.92 average SD of actual clusters
 
-pSD = 2*sum(nullDist$sdSize&lt;meanActualSD)/1000   # 0.66 proportion of random clusters of all spiders whose SDs were more extreme
-pSD2 = 2*sum(nullDist2$sdSize&lt;meanActualSD)/1000 # 0.78 proportion of random clusters of clustered spiders whose SDs were more extreme
+pSD = sum(nullDist)/100   # 0.66 proportion of random clusters of all spiders whose SDs were more extreme
+pSD2 = sum(nullDist2)/100 # 0.78 proportion of random clusters of clustered spiders whose SDs were more extreme
 
-
-# analysis on each actual cluster
+pSD</code></pre>
+<pre><code>## [1] 0.98</code></pre>
+<pre class="r"><code>pSD2</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code># analysis on each actual cluster
 pSDnull1 &lt;- c()
 pSDnull2 &lt;- c()
 
-for(cluster in 1:61){
-  pSDnull1 &lt;- c(pSDnull1, 2*sum(nullDist$sdSize&lt;clusters14$sdSize[cluster])/1000)
-  pSDnull2 &lt;- c(pSDnull2, 2*sum(nullDist2$sdSize&lt;clusters14$sdSize[cluster])/1000)
-}
-
-mean(pSDnull1) # 0.63 average p-value from the actual clusters based on null1</code></pre>
-<pre><code>## [1] 0.6499344</code></pre>
-<pre class="r"><code>mean(pSDnull2) # 0.67 average p-value from the actual clusters based on null2</code></pre>
-<pre><code>## [1] 0.6720984</code></pre>
+# for(cluster in 1:61){
+#   pSDnull1 &lt;- c(pSDnull1, 2*sum(nullDist$sdSize&lt;clusters14$sdSize[cluster])/1000)
+#   pSDnull2 &lt;- c(pSDsnull2, 2*sum(nullDist2$sdSize&lt;clusters14$sdSize[cluster])/1000)
+# }
+# 
+# mean(pSDnull1) # 0.63 average p-value from the actual clusters based on null1
+# mean(pSDnull2) # 0.67 average p-value from the actual clusters based on null2</code></pre>
 
 
 
