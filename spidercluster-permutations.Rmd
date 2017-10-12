@@ -38,9 +38,11 @@ clusters14 <- spiders %>%
 meanActualsdSize = mean(clusters14$sdSize, na.rm=TRUE)  # 0.92 average SD of actual clusters
 
 
+reps = 1000
+
 nullDist <- c()
 
-for(i in 1:100){
+for(i in 1:reps){
   clusterStats <- spiders %>%
     filter(Year == 2014) %>%
     mutate(sizePerm = sample(SpiderSizemm, replace=FALSE)) %>%
@@ -48,16 +50,17 @@ for(i in 1:100){
     filter(!is.na(SpiderSizemm)) %>%
     summarise(meanSize = mean(sizePerm), sdSize = sd(sizePerm), maxSize =
                 max(sizePerm), minSize = min(sizePerm), sumSq = sum(sizePerm^2))
-  meanNullsdSize = mean(clusterStats$sdSize, na.rm=TRUE)     
-  if (meanNullsdSize>meanActualsdSize) {
-    nullDist = c(nullDist, 1)
-  }
+  meanNullsdSize = mean(clusterStats$sdSize, na.rm=TRUE) 
+  nullDist <- c(nullDist, meanNullsdSize)
+#  if (meanNullsdSize<meanActualsdSize) {
+ #   nullDist = c(nullDist, 1)
+  #}
 }
 
 # (2) only use spiders that originally clustered
 nullDist2 <- c()
 
-for(i in 1:100){
+for(i in 1:reps){
   clusterStats <- spiders %>%
     filter(Year == 2014) %>%  
     filter(grepl('C', WebID)) %>%
@@ -66,16 +69,27 @@ for(i in 1:100){
     filter(!is.na(SpiderSizemm)) %>%
     summarise(meanSize = mean(sizePerm), sdSize = sd(sizePerm), maxSize =
                 max(sizePerm), minSize = min(sizePerm))
-  meanNull1sdSize = mean(clusterStats$sdSize, na.rm=TRUE)     
-  if (meanNullsdSize>meanActualsdSize) {
-    nullDist2 = c(nullDist2, 1)
-  }
+  meanNull1sdSize = mean(clusterStats$sdSize, na.rm=TRUE) 
+  nullDist2 <- c(nullDist2, meanNull1sdSize)
+ # if (meanNullsdSize>meanActualsdSize) {
+  #  nullDist2 = c(nullDist2, 1)
+  #}
 }
+
+nullDistdf <- data.frame(matrix(nrow = reps,ncol=3))
+nullDistdf[,1] <- c(1:reps)
+nullDistdf[,2] <- nullDist
+nullDistdf[,3] <- nullDist2
+
+ggplot(data=nullDistdf) + geom_histogram(aes(X2), binwidth=0.01) + labs(x = 'SD of sizes in clusters', title = 'Null SD sampling distribution from random permutations of all spiders') + coord_cartesian(xlim = c(0.8, 1.35))
+
+ggplot(data=nullDistdf) + geom_histogram(aes(X3), binwidth=0.01) + labs(x = 'SD of sizes in clusters', title = 'Null SD sampling dist from random permutations of spiders clustered in real life') + coord_cartesian(xlim = c(0.8, 1.35))
 
 # analysis by aggregating the actual clusters
 
-pSD = sum(nullDist)/100   # 0.66 proportion of random clusters of all spiders whose SDs were more extreme
-pSD2 = sum(nullDist2)/100 # 0.78 proportion of random clusters of clustered spiders whose SDs were more extreme
+pSD = sum(nullDist<meanActualsdSize)/reps   # .039 proportion of random clusters of all spiders whose SDs were more extreme
+pSD2 = sum(nullDist2<meanActualsdSize)/reps
+#pSD2 = sum(nullDist2)/reps # 0.012 proportion of random clusters of clustered spiders whose SDs were more extreme
 
 pSD
 pSD2
