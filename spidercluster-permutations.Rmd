@@ -81,9 +81,9 @@ nullDistdf[,1] <- c(1:reps)
 nullDistdf[,2] <- nullDist
 nullDistdf[,3] <- nullDist2
 
-ggplot(data=nullDistdf) + geom_histogram(aes(X2), binwidth=0.01) + labs(x = 'SD of sizes in clusters', title = 'Null SD sampling distribution from random permutations of all spiders') + coord_cartesian(xlim = c(0.8, 1.35))
+ggplot(data=nullDistdf) + geom_histogram(aes(X2), binwidth=0.01) + labs(x = 'SD of sizes in clusters', title = 'Null SD sampling distribution from random permutations of all spiders') + coord_cartesian(xlim = c(0.8, 1.35)) + geom_vline(xintercept = meanActualsdSize )
 
-ggplot(data=nullDistdf) + geom_histogram(aes(X3), binwidth=0.01) + labs(x = 'SD of sizes in clusters', title = 'Null SD sampling dist from random permutations of spiders clustered in real life') + coord_cartesian(xlim = c(0.8, 1.35))
+ggplot(data=nullDistdf) + geom_histogram(aes(X3), binwidth=0.01) + labs(x = 'SD of sizes in clusters', title = 'Null SD sampling dist from random permutations of spiders clustered in real life') + coord_cartesian(xlim = c(0.8, 1.35)) + geom_vline(xintercept = meanActualsdSize)
 
 # analysis by aggregating the actual clusters
 
